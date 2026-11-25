@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     Entrepreneur Hub - a working one-page app.
+     Everything (HTML, CSS and JavaScript) is in this one file.
+     Click a feature card to open it and use the real activity inside.
+     Main colours: purple (#6d28d9) and gold (#f5b014).
+     Your progress is saved on your device with localStorage.
+     ============================================================ -->
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrepreneur Hub</title>
+
+  <!-- ======================= CSS: the look and the animations ======================= -->
+  <style>
+    /* ---------- Colour variables used across the whole page ---------- */
+    :root {
+      --purple: #1e40af;       /* deep navy blue - the main brand colour */
+      --purple-dark: #172554;  /* very deep navy for gradients and hover */
+      --purple-soft: #dbeafe;  /* light blue for soft backgrounds */
+      --gold: #f5b014;
+      --gold-dark: #d99a06;
+      --ink: #1e1b2e;
+      --grey: #6b7280;
+      --white: #ffffff;
+      --green: #16a34a;
+    }
+
+    /* Make width include padding, for easier layouts */
+    * { box-sizing: border-box; }
+
+    /* The whole page font and base colours */
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, Arial, sans-serif;
+      color: var(--ink);
+      background-color: var(--white);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    /* A centred container that keeps content a readable width */
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* Headings share tight spacing */
+    h1, h2, h3, h4 { line-height: 1.2; margin: 0 0 12px; }
+
+    /* Links have no underline by default */
+    a { text-decoration: none; color: inherit; }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-block; padding: 14px 28px; border: none; border-radius: 10px;
+      font-weight: 700; font-size: 17px; cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-gold { background-color: var(--gold); color: var(--ink); }
+    .btn-gold:hover { background-color: var(--gold-dark); }
+    .btn-purple { background-color: var(--purple); color: var(--white); }
+    .btn-purple:hover { background-color: var(--purple-dark); }
+    .btn-outline {
+      background-color: transparent; color: var(--white);
+      border: 2px solid rgba(255,255,255,0.6);
+    }
+    .btn-outline:hover { border-color: var(--white); }
+    .btn-small { padding: 10px 20px; font-size: 16px; }
+
+    /* ---------- Left sidebar (app navigation) ---------- */
+    /* The sidebar is fixed to the left. It slides off-screen on phones. */
+    .sidebar {
+      position: fixed; top: 0; left: 0; width: 240px; height: 100%;
+      background: linear-gradient(180deg, var(--purple-dark), var(--purple));
+      color: var(--white); padding: 22px 16px; z-index: 60; overflow-y: auto;
+      transform: translateX(-100%);                 /* hidden to the left by default */
+      transition: transform 0.25s ease;             /* smooth slide */
+    }
+    .sidebar.open { transform: translateX(0); }     /* slide in when opened */
+    .side-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .sidebar .logo-name { color: #ffffff; }
+    .sidebar .logo-accent { color: var(--gold); }
+    /* Small grey group label, like "Features" */
+    .side-group {
+      font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+      color: rgba(255,255,255,0.75); margin: 18px 8px 8px;
+    }
+    /* Each sidebar link/button */
+    .side-link {
+      display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+      background: transparent; border: none; color: rgba(255,255,255,0.96);
+      font-family: inherit; font-size: 16px; font-weight: 600;
+      padding: 11px 12px; border-radius: 10px; cursor: pointer; transition: background 0.15s ease;
+    }
+    .side-link:hover { background: rgba(255,255,255,0.18); color: #ffffff; }
+    .side-ico { width: 22px; display: inline-flex; align-items: center; justify-content: center; }
+    .side-ico svg { width: 20px; height: 20px; }
+    /* The menu icon that opens the sidebar on phones */
+    .hamburger {
+      background: var(--purple-soft); border: none; color: var(--purple);
+      font-size: 22px; width: 42px; height: 42px; border-radius: 10px; cursor: pointer; margin-right: 10px;
+    }
+    /* The light / dark mode toggle button */
+    .theme-btn {
+      background: var(--purple-soft); border: none; color: var(--purple);
+      font-size: 18px; width: 42px; height: 42px; border-radius: 10px; cursor: pointer; margin-left: 10px;
+    }
+    .theme-btn:hover { background: var(--purple); color: #ffffff; }
+    .theme-btn svg { width: 18px; height: 18px; }
+    /* A dark backdrop behind the sidebar on phones */
+    .side-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; z-index: 55; }
+    .side-backdrop.open { display: block; }
+
+    /* ---------- Header ---------- */
+    .header {
+      position: sticky; top: 0; background-color: var(--white);
+      border-bottom: 1px solid #eee; z-index: 20;
+    }
+    .header-inner {
+      display: flex; align-items: center; justify-content: space-between; height: 72px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .logo-mark { width: 16px; height: 16px; background-color: var(--gold); transform: rotate(45deg); }
+    .logo-name { font-size: 21px; font-weight: 800; color: var(--ink); }
+    .logo-accent { color: var(--purple); }
+    .menu a { margin: 0 14px; font-size: 16px; font-weight: 600; color: var(--ink); transition: color 0.15s ease; }
+    .menu a:hover { color: var(--purple); }
+    .hamburger svg { width: 20px; height: 20px; }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%);
+      color: var(--white); padding: 80px 0; overflow: hidden;
+    }
+    .hero-inner { display: flex; align-items: center; gap: 50px; flex-wrap: wrap; }
+    .hero-text { flex: 1; min-width: 300px; }
+    .badge-pill {
+      display: inline-block; background-color: rgba(255,255,255,0.15);
+      padding: 6px 14px; border-radius: 999px; font-size: 15px; margin-bottom: 18px;
+    }
+    .hero-text h1 { font-size: 50px; font-weight: 800; }
+    .hero-highlight { color: var(--gold); }
+    .hero-text p { font-size: 18px; color: rgba(255,255,255,0.9); max-width: 480px; margin: 0 0 28px; }
+    .hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
+
+    /* The little app preview card on the right (animated floating) */
+    .hero-card {
+      flex: 1; min-width: 280px; background-color: var(--white); color: var(--ink);
+      border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); overflow: hidden;
+      animation: float 4s ease-in-out infinite;
+    }
+    /* A gentle up-and-down floating animation */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+    .hero-card-top { background-color: var(--purple-soft); padding: 12px 16px; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: var(--purple); margin-right: 6px; }
+    .hero-card-body { padding: 22px; }
+    .hero-card-label { color: var(--grey); margin: 0; font-size: 14px; }
+    .hero-card-big { font-size: 30px; font-weight: 800; color: var(--purple); margin: 4px 0 18px; }
+    .hero-card-row { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid #eee; }
+    .tick { color: var(--green); font-weight: 700; }
+
+    /* ---------- Stats ---------- */
+    .stats { background-color: var(--purple-soft); padding: 40px 0; }
+    .stats-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; text-align: center; }
+    .stat { flex: 1; min-width: 140px; }
+    .stat-number { font-size: 38px; font-weight: 800; color: var(--purple); margin: 0; }
+    .stat-label { color: var(--grey); margin: 4px 0 0; }
+
+    /* ---------- Shared section bits ---------- */
+    .section-tag {
+      display: inline-block; color: var(--purple); background-color: var(--purple-soft);
+      padding: 5px 14px; border-radius: 999px; font-size: 15px; font-weight: 700; margin-bottom: 14px;
+    }
+    .section-head { text-align: center; max-width: 620px; margin: 0 auto 46px; }
+    .section-sub { color: var(--grey); font-size: 17px; }
+    h2 { font-size: 34px; }
+
+    /* ---------- About ---------- */
+    .about { padding: 80px 0; text-align: center; }
+    .about p { max-width: 640px; margin: 0 auto; color: var(--grey); font-size: 18px; }
+
+    /* ---------- Features ---------- */
+    .features { padding: 80px 0; background-color: #faf9fe; }
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;
+    }
+    /* Each feature card is a button you can click */
+    .feature-card {
+      background-color: var(--white); border: 1px solid #eee; border-radius: 14px;
+      padding: 30px; cursor: pointer; text-align: left;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(109,40,217,0.14); }
+    .feature-icon {
+      display: inline-grid; place-items: center; width: 54px; height: 54px;
+      border-radius: 14px; background-color: var(--purple-soft); color: var(--purple); margin-bottom: 16px;
+    }
+    .feature-icon svg { width: 27px; height: 27px; }
+    .feature-card h3 { font-size: 22px; color: var(--ink); }
+    .feature-card p { color: var(--grey); margin: 0 0 12px; }
+    .feature-open { color: var(--purple); font-weight: 700; font-size: 17px; }
+
+    /* ---------- Steps ---------- */
+    .steps { padding: 80px 0; }
+    .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+    .step-card {
+      background-color: var(--white); border-radius: 14px; padding: 30px;
+      border-top: 4px solid var(--gold); box-shadow: 0 10px 24px rgba(0,0,0,0.05);
+    }
+    .step-number {
+      display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+      background-color: var(--purple); color: var(--white); font-weight: 800; margin-bottom: 14px;
+    }
+    .step-card p { color: var(--grey); margin: 0; }
+
+    /* ---------- Quote ---------- */
+    .quote {
+      background: linear-gradient(135deg, var(--purple-dark), var(--purple));
+      color: var(--white); padding: 70px 0; text-align: center;
+    }
+    .quote blockquote { font-size: 26px; font-style: italic; max-width: 720px; margin: 0 auto 10px; font-weight: 600; }
+    .quote-author { color: var(--gold); font-weight: 700; margin: 0; }
+
+    /* ---------- CTA ---------- */
+    .cta { padding: 80px 0; text-align: center; }
+    .cta p { color: var(--grey); font-size: 18px; max-width: 460px; margin: 0 auto 26px; }
+
+    /* ---------- Contact ---------- */
+    .contact { background-color: var(--purple-soft); padding: 80px 0; text-align: center; }
+    .contact-email a { color: var(--purple); font-size: 22px; font-weight: 800; overflow-wrap: anywhere; }
+    .contact-email a:hover { color: var(--purple-dark); }
+
+    /* ---------- Footer ---------- */
+    .footer { background-color: var(--ink); color: var(--white); padding-top: 50px; }
+    .footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 30px; padding-bottom: 40px; }
+    .footer-brand p { color: rgba(255,255,255,0.6); max-width: 260px; margin: 10px 0 0; }
+    .footer-links h4 { color: var(--gold); margin-bottom: 12px; }
+    .footer-links a { display: block; color: rgba(255,255,255,0.75); padding: 4px 0; transition: color 0.15s ease; }
+    .footer-links a:hover { color: var(--white); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.15); text-align: center; padding: 20px;
+      font-size: 14px; color: rgba(255,255,255,0.6);
+    }
+
+    /* ============================================================
+       MODAL: the pop-up window that shows a feature's activities
+       ============================================================ */
+    /* The dark background behind the pop-up (hidden until opened) */
+    .overlay {
+      position: fixed; inset: 0; background-color: rgba(30,27,46,0.6);
+      display: none; align-items: flex-start; justify-content: center;
+      padding: 40px 16px; overflow-y: auto; z-index: 50;
+    }
+    /* When we add the 'open' class, show the overlay */
+    .overlay.open { display: flex; }
+    /* The white pop-up box */
+    .modal {
+      background-color: var(--white); border-radius: 18px; max-width: 680px; width: 100%;
+      padding: 30px; box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+      animation: pop 0.25s ease;   /* a small pop-in animation */
+    }
+    /* The pop-in animation: start small and see-through, end full size */
+    @keyframes pop {
+      from { transform: scale(0.9); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .modal-head h3 { font-size: 24px; margin: 0; }
+    /* The X close button */
+    .modal-close {
+      background: var(--purple-soft); color: var(--purple); border: none; cursor: pointer;
+      width: 38px; height: 38px; border-radius: 50%; font-size: 20px; font-weight: 700; line-height: 1;
+    }
+    .modal-close:hover { background: var(--purple); color: var(--white); }
+    .modal-sub { color: var(--grey); margin: 0 0 20px; }
+    /* A short context paragraph at the top of each activity */
+    .panel-intro { color: var(--grey); margin: 0 0 18px; font-size: 16.5px; line-height: 1.6; }
+    /* Each sub-activity inside a feature is its own little card */
+    .activity { border: 1px solid #eee; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+    .activity h4 { margin: 0 0 4px; font-size: 19px; color: var(--purple); display: flex; align-items: center; gap: 8px; }
+    .activity h4 svg { width: 19px; height: 19px; flex: none; }
+    .activity .sub { color: var(--grey); font-size: 16px; margin: 0 0 12px; }
+    .item-text { font-size: 16.5px; }
+    /* Inline SVG icons inherit the surrounding text colour */
+    .ico { display: inline-flex; }
+    .ico svg { width: 1em; height: 1em; }
+    .badge-pill svg { width: 14px; height: 14px; }
+    .badge-pill { display: inline-flex; align-items: center; gap: 7px; }
+    .tick svg { width: 18px; height: 18px; }
+    .item button svg { width: 15px; height: 15px; vertical-align: middle; }
+
+    /* ---------- Feature page: shows ONE feature on its own ---------- */
+    .feature-page { padding: 40px 0 70px; min-height: 72vh; }
+    .btn-back {
+      background: var(--purple-soft); color: var(--purple); border: none; cursor: pointer;
+      font-weight: 700; font-family: inherit; font-size: 16px;
+      padding: 10px 18px; border-radius: 10px; margin-bottom: 20px;
+    }
+    .btn-back:hover { background: var(--purple); color: var(--white); }
+    .feature-title { font-size: 34px; color: var(--ink); margin: 0 0 6px; }
+    .feature-sub { color: var(--grey); margin: 0 0 26px; }
+    .feature-page .panel { max-width: 640px; }   /* keep the activities a readable width */
+
+    /* Each activity panel is hidden until its feature is opened */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Big number shown in some activities (like the streak) */
+    .big-number { font-size: 44px; font-weight: 800; color: var(--purple); margin: 0; }
+    /* A little pulse animation when a number changes */
+    .pulse { animation: pulse 0.4s ease; }
+    @keyframes pulse {
+      0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); }
+    }
+
+    /* A row with a checkbox-style item */
+    .item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 10px;
+    }
+    .item.done { background-color: #f0fdf4; border-color: #bbf7d0; }
+    .item.done span.item-text { text-decoration: line-through; color: var(--grey); }
+    .item button {
+      border: none; cursor: pointer; border-radius: 8px; padding: 6px 12px; font-weight: 700; font-family: inherit;
+      background: var(--purple-soft); color: var(--purple);
+    }
+    .item.done button { background: var(--green); color: var(--white); }
+
+    /* A progress bar */
+    .bar { background: #eee; border-radius: 999px; height: 14px; overflow: hidden; margin: 10px 0 6px; }
+    .bar-fill { background: linear-gradient(90deg, var(--purple), var(--gold)); height: 100%; width: 0; transition: width 0.5s ease; }
+
+    /* Text inputs inside activities */
+    .field {
+      width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px;
+      font-size: 17px; font-family: inherit; margin-bottom: 10px;
+    }
+    .row { display: flex; gap: 10px; }
+    .row .field { margin-bottom: 0; }
+
+    /* Tips list */
+    .tips { background: var(--purple-soft); border-radius: 10px; padding: 14px 18px; margin-top: 16px; }
+    .tips li { margin: 4px 0; }
+
+    /* A small message line */
+    .msg { color: var(--green); font-weight: 700; min-height: 22px; margin: 8px 0 0; }
+
+    /* ---------- Badges grid (inside its modal) ---------- */
+    .badge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .badge-box {
+      border: 1px solid #eee; border-radius: 12px; padding: 16px; text-align: center;
+      opacity: 0.4; filter: grayscale(1); transition: all 0.3s ease;
+    }
+    .badge-box.unlocked { opacity: 1; filter: none; border-color: var(--gold); background: #fffbeb; }
+    .badge-icon { display: inline-flex; color: var(--purple); }
+    .badge-icon svg { width: 30px; height: 30px; }
+    .badge-name { font-weight: 700; font-size: 15px; margin-top: 4px; }
+
+    /* ---------- Scroll reveal animation ---------- */
+    /* Elements start slightly down and see-through... */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    /* ...then slide up and fade in when they enter the screen */
+    .reveal.show { opacity: 1; transform: translateY(0); }
+
+    /* ============================================================
+       DARK MODE: when <body> has the class "dark", override colours
+       ============================================================ */
+    body.dark {
+      --white: #23242b;        /* raised surfaces stay near-black without losing separation */
+      --ink: #f7f7fb;          /* main text light */
+      --grey: #bfc1cc;         /* secondary text stays readable */
+      --purple-soft: #252c3d;  /* muted deep-blue accents */
+      background-color: #15161b;
+    }
+    /* In dark mode, accent TEXT turns a lighter blue so it stays visible
+       (buttons keep the deep navy because they colour the background, not the text) */
+    body.dark .logo-accent,
+    body.dark .section-tag,
+    body.dark .feature-open,
+    body.dark .hero-card-big,
+    body.dark .stat-number,
+    body.dark .activity h4,
+    body.dark .big-number,
+    body.dark .contact-email a,
+    body.dark .btn-back,
+    body.dark .feature-icon,
+    body.dark .menu a:hover { color: #8ab0ff; }
+    body.dark .footer-links a:hover { color: #ffffff; }
+    body.dark .theme-btn { color: #cdd9ff; }   /* keep the moon/sun icon bright in dark mode */
+    body.dark .header { border-bottom-color: #34353e; }
+    body.dark .features { background-color: #1a1b21; }
+    body.dark .feature-card:hover { border-color: #5d6070; }
+    body.dark .feature-card,
+    body.dark .activity,
+    body.dark .step-card,
+    body.dark .item { border-color: #363740; }
+    body.dark .item.done { background-color: #202b24; border-color: #31583c; }
+    body.dark .hero-card-row { border-top-color: #363740; }
+    body.dark .field { background-color: #191a20; color: #f7f7fb; border-color: #40414b; }
+    body.dark .bar { background-color: #383943; }
+    body.dark .footer { background-color: #111216; }
+    body.dark .badge-box { border-color: #34353d; }
+    body.dark .badge-box.unlocked { background-color: #292313; }
+    /* Keep text that sits on purple/dark areas readable (white) in dark mode */
+    body.dark .hero,
+    body.dark .quote,
+    body.dark .footer,
+    body.dark .btn-outline,
+    body.dark .btn-purple { color: #ffffff; }
+    body.dark .btn-gold { color: #15151c; }
+
+    /* ---------- Big screens: sidebar is always shown, content shifts right ---------- */
+    @media (min-width: 1000px) {
+      .sidebar { transform: translateX(0); }   /* always visible */
+      .app-shell { padding-left: 240px; }       /* push content past the sidebar */
+      .hamburger { display: none; }             /* no need for the menu button */
+      .side-backdrop { display: none !important; }
+    }
+
+    /* ---------- Phone screens ---------- */
+    @media (max-width: 840px) {
+      .menu { display: none; }
+    }
+    @media (min-width: 1000px) and (max-width: 1049px) {
+      .menu { display: none; }
+    }
+
+    @media (max-width: 700px) {
+      .hero-text h1 { font-size: 36px; }
+      .hero-text { text-align: center; min-width: 0; }
+      .hero-card { min-width: 0; width: 100%; }
+      .hero-buttons { justify-content: center; }
+      .feature-grid { grid-template-columns: minmax(0, 1fr); }
+      .row { flex-wrap: wrap; }
+      .row .field { min-width: 0; flex: 1 1 0; }
+      h2 { font-size: 28px; }
+    }
+    @media (max-width: 360px) {
+      .header .container { padding: 0 12px; }
+      .header-inner { gap: 8px; }
+      .logo { gap: 6px; }
+      .logo-name { font-size: 18px; white-space: nowrap; }
+      .hamburger, .theme-btn { flex: 0 0 38px; width: 38px; height: 38px; }
+      .hamburger { margin-right: 0; }
+      .theme-btn { margin-left: 0; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ======================= LEFT SIDEBAR (app navigation) ======================= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="side-brand">
+      <span class="logo-mark"></span>
+      <span class="logo-name">Entrepreneur<span class="logo-accent">Hub</span></span>
+    </div>
+
+    <div class="side-group">Menu</div>
+    <button class="side-link" onclick="goToSection('home')"><span class="side-ico" data-icon="home"></span> Home</button>
+    <button class="side-link" onclick="goToSection('about')"><span class="side-ico" data-icon="book"></span> About</button>
+    <button class="side-link" onclick="goToSection('features')"><span class="side-ico" data-icon="grid"></span> Features</button>
+    <button class="side-link" onclick="goToSection('steps')"><span class="side-ico" data-icon="target"></span> How it works</button>
+    <button class="side-link" onclick="goToSection('contact')"><span class="side-ico" data-icon="mail"></span> Contact</button>
+
+    <div class="side-group">Features</div>
+    <button class="side-link" onclick="pickFeature('discipline')"><span class="side-ico" data-icon="flame"></span> Discipline</button>
+    <button class="side-link" onclick="pickFeature('ceo')"><span class="side-ico" data-icon="target"></span> CEO Mode</button>
+    <button class="side-link" onclick="pickFeature('skills')"><span class="side-ico" data-icon="briefcase"></span> Business Skills</button>
+    <button class="side-link" onclick="pickFeature('money')"><span class="side-ico" data-icon="wallet"></span> Money Habits</button>
+    <button class="side-link" onclick="pickFeature('sales')"><span class="side-ico" data-icon="trending"></span> Sales Tracker</button>
+    <button class="side-link" onclick="pickFeature('badges')"><span class="side-ico" data-icon="trophy"></span> Badges</button>
+  </aside>
+
+  <!-- The dark area behind the sidebar on phones (tap it to close) -->
+  <div class="side-backdrop" id="sideBackdrop" onclick="closeSidebar()"></div>
+
+  <!-- APP SHELL: holds the header, page content and footer; shifts right of the sidebar -->
+  <div class="app-shell">
+
+  <!-- ======================= HEADER ======================= -->
+  <header class="header">
+    <div class="container header-inner">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Open menu"><span data-icon="menu"></span></button>
+      <a href="#home" class="logo" onclick="goToSection('home');return false;">
+        <span class="logo-mark"></span>
+        <span class="logo-name">Entrepreneur<span class="logo-accent">Hub</span></span>
+      </a>
+      <nav class="menu">
+        <a href="#home" onclick="goToSection('home');return false;">Home</a>
+        <a href="#about" onclick="goToSection('about');return false;">About</a>
+        <a href="#features" onclick="goToSection('features');return false;">Features</a>
+        <a href="#steps" onclick="goToSection('steps');return false;">How it works</a>
+        <a href="#contact" onclick="goToSection('contact');return false;">Contact</a>
+      </nav>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle dark mode"></button>
+    </div>
+  </header>
+
+  <!-- Everything inside #landing is the home page (hidden when a feature page is open) -->
+  <div id="landing">
+
+  <!-- ======================= HERO ======================= -->
+  <section id="home" class="hero">
+    <div class="container hero-inner">
+      <div class="hero-text">
+        <span class="badge-pill"><span class="ico" data-icon="rocket"></span> For young founders</span>
+        <h1>Build your business.<br><span class="hero-highlight">Build your discipline.</span></h1>
+        <p>Entrepreneur Hub helps young people get ready for the business world — discipline, business skills and smart money habits, all in one place. Get 1% better every day.</p>
+        <div class="hero-buttons">
+          <a href="#features" class="btn btn-gold">Open the app</a>
+          <a href="#about" class="btn btn-outline">Learn more</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="hero-card-body">
+          <p class="hero-card-label">Today's streak</p>
+          <p class="hero-card-big" id="heroStreak">0 days</p>
+          <div class="hero-card-row"><span>Daily challenge</span><span class="tick" data-icon="check"></span></div>
+          <div class="hero-card-row"><span>Top 3 priorities</span><span class="tick" data-icon="check"></span></div>
+          <div class="hero-card-row"><span>Save KSh 100</span><span class="tick" data-icon="check"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= STATS ======================= -->
+  <section class="stats">
+    <div class="container stats-inner">
+      <div class="stat reveal"><p class="stat-number">6</p><p class="stat-label">Working tools</p></div>
+      <div class="stat reveal"><p class="stat-number">6</p><p class="stat-label">Badges to earn</p></div>
+      <div class="stat reveal"><p class="stat-number">1%</p><p class="stat-label">Better every day</p></div>
+      <div class="stat reveal"><p class="stat-number">100%</p><p class="stat-label">Made in Kenya</p></div>
+    </div>
+  </section>
+
+  <!-- ======================= ABOUT ======================= -->
+  <section id="about" class="about">
+    <div class="container">
+      <span class="section-tag reveal">About</span>
+      <h2 class="reveal">One app to grow the founder in you</h2>
+      <p class="reveal">
+        Entrepreneur Hub brings discipline, business skills and smart money habits together
+        in one place. Click any feature below to open it and start the activity — your
+        progress is saved on your device.
+      </p>
+    </div>
+  </section>
+
+  <!-- ======================= FEATURES (clickable) ======================= -->
+  <section id="features" class="features">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag reveal">Features</span>
+        <h2 class="reveal">Tap a feature to use it</h2>
+        <p class="section-sub reveal">Each one opens a real, working activity.</p>
+      </div>
+
+      <div class="feature-grid">
+        <!-- Each card calls openFeature('key') when clicked -->
+        <article class="feature-card reveal" onclick="openFeature('discipline')">
+          <span class="feature-icon" data-icon="flame"></span>
+          <h3>Discipline</h3>
+          <p>Mark your habit done each day and grow your streak.</p>
+          <span class="feature-open">Open <span class="ico" data-icon="arrowRight"></span></span>
+        </article>
+
+        <article class="feature-card reveal" onclick="openFeature('ceo')">
+          <span class="feature-icon" data-icon="target"></span>
+          <h3>CEO Mode</h3>
+          <p>Set your top 3 priorities and track your CEO score.</p>
+          <span class="feature-open">Open <span class="ico" data-icon="arrowRight"></span></span>
+        </article>
+
+        <article class="feature-card reveal" onclick="openFeature('skills')">
+          <span class="feature-icon" data-icon="briefcase"></span>
+          <h3>Business Skills</h3>
+          <p>Tick off key founder skills as you learn them.</p>
+          <span class="feature-open">Open <span class="ico" data-icon="arrowRight"></span></span>
+        </article>
+
+        <article class="feature-card reveal" onclick="openFeature('money')">
+          <span class="feature-icon" data-icon="wallet"></span>
+          <h3>Money Habits</h3>
+          <p>Add your savings and watch your goal fill up.</p>
+          <span class="feature-open">Open <span class="ico" data-icon="arrowRight"></span></span>
+        </article>
+
+        <article class="feature-card reveal" onclick="openFeature('sales')">
+          <span class="feature-icon" data-icon="trending"></span>
+          <h3>Sales Tracker</h3>
+          <p>Record every sale you make and watch your total grow.</p>
+          <span class="feature-open">Open <span class="ico" data-icon="arrowRight"></span></span>
+        </article>
+
+        <article class="feature-card reveal" onclick="openFeature('badges')">
+          <span class="feature-icon" data-icon="trophy"></span>
+          <h3>Badges</h3>
+          <p>See which badges you've unlocked as you grow.</p>
+          <span class="feature-open">Open <span class="ico" data-icon="arrowRight"></span></span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= STEPS ======================= -->
+  <section id="steps" class="steps">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-tag reveal">How it works</span>
+        <h2 class="reveal">Start in three simple steps</h2>
+      </div>
+      <div class="step-grid">
+        <div class="step-card reveal"><span class="step-number">1</span><h3>Set your goal</h3><p>Pick the habit or skill to build this week.</p></div>
+        <div class="step-card reveal"><span class="step-number">2</span><h3>Show up daily</h3><p>Do one small thing each day and keep your streak.</p></div>
+        <div class="step-card reveal"><span class="step-number">3</span><h3>Grow 1% better</h3><p>Small wins add up into real skills and confidence.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= QUOTE (with a "new quote" button) ======================= -->
+  <section class="quote">
+    <div class="container">
+      <blockquote id="quoteText">"Discipline is the bridge between goals and accomplishment."</blockquote>
+      <p class="quote-author" id="quoteAuthor">— Jim Rohn</p>
+      <button class="btn btn-gold" onclick="newQuote()" style="margin-top:18px;">New quote</button>
+    </div>
+  </section>
+
+  <!-- ======================= CTA ======================= -->
+  <section class="cta">
+    <div class="container">
+      <h2 class="reveal">Ready to build your future?</h2>
+      <p class="reveal">Open the app and start getting 1% better every day.</p>
+      <a href="#features" class="btn btn-gold">Open the app</a>
+    </div>
+  </section>
+
+  <!-- ======================= CONTACT ======================= -->
+  <section id="contact" class="contact">
+    <div class="container">
+      <span class="section-tag reveal">Contact</span>
+      <h2 class="reveal">Let's talk</h2>
+      <p class="reveal">Want to join or learn more? Reach out any time.</p>
+      <p class="contact-email reveal"><a href="mailto:Raymond.wachiya@student.moringaschool.com">Raymond.wachiya@student.moringaschool.com</a></p>
+    </div>
+  </section>
+
+  <!-- ======================= FOOTER ======================= -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo-name">Entrepreneur<span class="logo-accent">Hub</span></span>
+        <p>Build your business. Build your discipline.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Explore</h4>
+        <a href="#about">About</a>
+        <a href="#features">Features</a>
+        <a href="#steps">How it works</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>© 2026 Entrepreneur Hub · Made by Raymond · Moringa Future Builders.</p></div>
+  </footer>
+
+  </div><!-- end #landing -->
+
+  <!-- ======================= FEATURE PAGE: one feature on its own ======================= -->
+  <section id="featurePage" class="feature-page" style="display:none;">
+    <div class="container">
+      <button class="btn-back" onclick="goBack()"><span class="ico" data-icon="arrowLeft"></span> Back to home</button>
+      <h1 class="feature-title" id="featureTitle">Feature</h1>
+      <p class="feature-sub" id="featureSub"></p>
+
+      <!-- Panel: Discipline (several activities) -->
+      <div class="panel" id="panel-discipline">
+        <p class="panel-intro">Build the habits that make a founder. Work through the activities below — your progress saves automatically.</p>
+
+        <!-- Activity 1: streak + 1% better -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="flame"></span> Daily streak &amp; 1% better</h4>
+          <p class="sub">Show up today, then log one small thing you did to get 1% better.</p>
+          <p class="big-number" id="streakNum">0 days</p>
+          <p class="hero-card-label">Best streak: <span id="bestStreak">0</span> day(s)</p>
+          <button class="btn btn-purple" onclick="markDay()" style="margin:10px 0;">I did it today</button>
+          <p class="msg" id="streakMsg"></p>
+          <div class="row">
+            <input class="field" id="onePctInput" placeholder="My 1% today: e.g. read 5 pages" maxlength="80">
+            <button class="btn btn-purple" onclick="addOnePct()">Log</button>
+          </div>
+          <div id="onePctList"></div>
+        </div>
+
+        <!-- Activity 2: habits -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="check"></span> My habits</h4>
+          <p class="sub">Add your habits and tick them each day.</p>
+          <div class="row">
+            <input class="field" id="habitInput" placeholder="Add a habit" maxlength="40">
+            <button class="btn btn-purple" onclick="addHabit()">Add</button>
+          </div>
+          <div id="habitList"></div>
+        </div>
+
+        <!-- Activity 3: goal -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="target"></span> My goal</h4>
+          <p class="sub">Set one goal and add progress toward it.</p>
+          <div class="row">
+            <input class="field" id="goalText" placeholder="Goal (e.g. sell 20 cakes)" maxlength="40">
+            <input class="field" id="goalTarget" type="number" placeholder="Target" min="1" style="max-width:120px;">
+          </div>
+          <button class="btn btn-purple" onclick="setGoal()" style="margin:8px 0;">Set goal</button>
+          <div id="goalBox"></div>
+        </div>
+
+        <!-- Activity 4: daily challenge -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="zap"></span> Daily challenge</h4>
+          <p class="sub">A new small challenge every day.</p>
+          <p id="challengeText" style="font-weight:600;"></p>
+          <button class="btn btn-gold" onclick="doChallenge()">Mark done</button>
+          <p class="msg" id="challengeMsg"></p>
+        </div>
+      </div>
+
+      <!-- Panel: CEO Mode (several activities) -->
+      <div class="panel" id="panel-ceo">
+        <p class="panel-intro">Run your day like a company — set priorities and track what's due.</p>
+
+        <!-- Activity 1: priorities + score -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="target"></span> Top 3 priorities</h4>
+          <p class="sub">Write up to 3, then tick them off. Your CEO score updates live.</p>
+          <div class="row">
+            <input class="field" id="prioInput" placeholder="Add a priority (max 3)" maxlength="60">
+            <button class="btn btn-purple" onclick="addPriority()">Add</button>
+          </div>
+          <div id="prioList"></div>
+          <p class="hero-card-label" style="margin-top:12px;">CEO score today</p>
+          <p class="big-number" id="ceoScore">0%</p>
+        </div>
+
+        <!-- Activity 2: deadlines -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="clock"></span> Deadlines</h4>
+          <p class="sub">Add the things that are due and when.</p>
+          <div class="row">
+            <input class="field" id="dlText" placeholder="What is due" maxlength="40">
+            <input class="field" id="dlDate" type="date" style="max-width:170px;">
+          </div>
+          <button class="btn btn-purple" onclick="addDeadline()" style="margin:8px 0;">Add deadline</button>
+          <div id="dlList"></div>
+        </div>
+      </div>
+
+      <!-- Panel: Business Skills (several activities) -->
+      <div class="panel" id="panel-skills">
+        <p class="panel-intro">Learn the core skills, and spark fresh business ideas.</p>
+
+        <!-- Activity 1: skills checklist -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="briefcase"></span> Skills checklist</h4>
+          <p class="sub">Tick each skill as you learn it and fill the bar to 100%.</p>
+          <div id="skillList"></div>
+          <div class="bar"><div class="bar-fill" id="skillBar"></div></div>
+          <p class="msg" id="skillMsg"></p>
+        </div>
+
+        <!-- Activity 2: idea generator -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="bulb"></span> Idea generator</h4>
+          <p class="sub">Stuck for a business idea? Get one here.</p>
+          <p id="ideaText" style="font-weight:600;">Click the button for an idea.</p>
+          <button class="btn btn-gold" onclick="newIdea()">Give me an idea</button>
+        </div>
+      </div>
+
+      <!-- Panel: Money (several activities) -->
+      <div class="panel" id="panel-money">
+        <p class="panel-intro">Grow good money habits and understand your numbers.</p>
+
+        <!-- Activity 1: savings goal -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="wallet"></span> Savings goal</h4>
+          <p class="sub">Add what you save toward the KSh 1,000 goal.</p>
+          <div class="row">
+            <input class="field" id="saveInput" type="number" placeholder="Amount saved (KSh)" min="1">
+            <button class="btn btn-purple" onclick="addSaving()">Add</button>
+          </div>
+          <p class="big-number" id="saveTotal">KSh 0</p>
+          <div class="bar"><div class="bar-fill" id="saveBar"></div></div>
+          <p class="msg" id="saveMsg"></p>
+        </div>
+
+        <!-- Activity 2: profit calculator -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="calc"></span> Profit calculator</h4>
+          <p class="sub">See your profit and margin on one item.</p>
+          <div class="row">
+            <input class="field" id="costInput" type="number" placeholder="Cost (KSh)" min="0">
+            <input class="field" id="priceInput" type="number" placeholder="Selling price (KSh)" min="0">
+          </div>
+          <button class="btn btn-purple" onclick="calcProfit()" style="margin:8px 0;">Calculate</button>
+          <p id="profitText" style="font-weight:700;"></p>
+        </div>
+      </div>
+
+      <!-- Panel: Sales Tracker -->
+      <div class="panel" id="panel-sales">
+        <p class="panel-intro">Running a hustle? Record every sale you make and watch your money grow.</p>
+
+        <!-- Activity: record a sale -->
+        <div class="activity">
+          <h4><span class="ico" data-icon="dollar"></span> Record a sale</h4>
+          <p class="sub">Add what you sold and for how much.</p>
+          <div class="row">
+            <input class="field" id="saleItem" placeholder="What you sold" maxlength="40">
+            <input class="field" id="saleAmount" type="number" placeholder="KSh" min="1" style="max-width:120px;">
+          </div>
+          <button class="btn btn-purple" onclick="recordSale()" style="margin:8px 0;">Record sale</button>
+          <p class="hero-card-label">Total sales made: <span id="saleCount">0</span></p>
+          <p class="big-number" id="saleTotal">KSh 0</p>
+          <div id="saleList"></div>
+        </div>
+      </div>
+
+      <!-- Panel: Badges -->
+      <div class="panel" id="panel-badges">
+        <p class="panel-intro">Badges reward your consistency. Keep using the other features and you'll unlock all six.</p>
+        <div class="activity">
+          <h4><span class="ico" data-icon="trophy"></span> Your badges</h4>
+          <p class="sub" id="badgeCount">0 of 6 unlocked</p>
+          <div class="badge-grid" id="badgeGrid"></div>
+        </div>
+      </div>
+
+    </div><!-- .container -->
+  </section><!-- #featurePage -->
+
+  </div><!-- end app-shell -->
+
+  <!-- ======================= JAVASCRIPT: makes everything work ======================= -->
+  <script>
+    // ---------- Saving and loading data on the device ----------
+    // load() reads saved data; if there is none, it returns the starter data.
+    function load() {
+      try {
+        var saved = localStorage.getItem("eh-data");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+      return {
+        streak: 0, bestStreak: 0, lastDone: "",
+        onePct: [],              // list of "1% better" notes
+        habits: [],              // list of { text, doneDate }
+        goal: null,              // { text, target, current }
+        challengeDate: "",       // the date the daily challenge was done
+        priorities: [],          // list of { text, done }
+        deadlines: [],           // list of { text, date }
+        skillsDone: [],          // true/false for each business skill learned
+        savingsTotal: 0,
+        sales: []                // list of { item, amount }
+      };
+    }
+    // save() writes the data back to the device.
+    function save() {
+      try { localStorage.setItem("eh-data", JSON.stringify(data)); } catch (e) {}
+    }
+
+    // Load the data once when the page opens.
+    var data = load();
+    // Make sure newer fields exist (for data saved by an older version).
+    if (!data.sales) data.sales = [];
+    if (!data.skillsDone) data.skillsDone = [];
+    if (!data.onePct) data.onePct = [];
+    if (!data.habits) data.habits = [];
+    if (!data.deadlines) data.deadlines = [];
+
+    // ---------- Inline SVG icons (used instead of emojis) ----------
+    function svg(paths) {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+             'stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
+    }
+    var ICONS = {
+      home: svg('<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>'),
+      grid: svg('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'),
+      menu: svg('<path d="M4 6h16M4 12h16M4 18h16"/>'),
+      mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'),
+      arrowRight: svg('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'),
+      arrowLeft: svg('<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>'),
+      close: svg('<path d="m18 6-12 12M6 6l12 12"/>'),
+      flame: svg('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'),
+      target: svg('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>'),
+      briefcase: svg('<rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>'),
+      wallet: svg('<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/><path d="M17 12h.01"/>'),
+      trending: svg('<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>'),
+      trophy: svg('<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>'),
+      check: svg('<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>'),
+      zap: svg('<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>'),
+      clock: svg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
+      book: svg('<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>'),
+      bulb: svg('<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>'),
+      calc: svg('<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 6h8"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/>'),
+      dollar: svg('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'),
+      rocket: svg('<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>'),
+      moon: svg('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'),
+      sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>')
+    };
+    // Put each icon into every element that has a data-icon attribute.
+    function paintIcons(root) {
+      (root || document).querySelectorAll("[data-icon]").forEach(function (el) {
+        el.innerHTML = ICONS[el.getAttribute("data-icon")] || "";
+      });
+    }
+
+    // The skills shown in Business Skills. They appear in batches of 6 —
+    // finish a batch and the next one unlocks.
+    var SKILLS = [
+      // Level 1
+      "Plan a simple business idea", "Price a product fairly", "Sell to your first customer",
+      "Make a simple budget", "Spot a real customer need", "Keep basic records",
+      // Level 2
+      "Handle a tough 'no'", "Give great customer service", "Promote on social media",
+      "Set a savings goal", "Work out your profit", "Ask customers for feedback",
+      // Level 3
+      "Find your first 10 customers", "Manage your time well", "Negotiate a better price",
+      "Build a simple brand", "Reinvest your profit", "Lead a small team"
+    ];
+
+    // The list of badges and the rule to unlock each one.
+    var BADGES = [
+      { icon: "check",  name: "First Step", check: function(){ return data.streak >= 1; } },
+      { icon: "flame",  name: "On Fire",    check: function(){ return data.streak >= 3; } },
+      { icon: "target", name: "CEO",        check: function(){ return data.priorities.some(function(p){ return p.done; }); } },
+      { icon: "book",   name: "Learner",    check: function(){ return (data.skillsDone||[]).filter(Boolean).length >= 3; } },
+      { icon: "wallet", name: "Saver",      check: function(){ return data.savingsTotal >= 100; } },
+      { icon: "dollar", name: "First Sale", check: function(){ return (data.sales||[]).length >= 1; } }
+    ];
+
+    // Today's date as text, e.g. "2026-11-24". Used so the streak counts once a day.
+    function today() { return new Date().toISOString().slice(0, 10); }
+
+    // ---------- Open and close the pop-up ----------
+    function openFeature(key) {
+      // Titles and subtitles for each feature.
+      var info = {
+        discipline: ["Discipline", "Mark your habit done each day to grow your streak."],
+        ceo:        ["CEO Mode", "Set up to 3 priorities and tick them off."],
+        skills:     ["Business Skills", "Tick the skills you have learned."],
+        money:      ["Money Habits", "Add your savings toward the KSh 1,000 goal."],
+        sales:      ["Sales Tracker", "Record every sale and watch your money grow."],
+        badges:     ["Badges", "The rewards you earn as you grow."]
+      };
+      document.getElementById("featureTitle").textContent = info[key][0];
+      document.getElementById("featureSub").textContent = info[key][1];
+
+      // Hide every panel, then show the one we want.
+      var panels = document.querySelectorAll(".panel");
+      for (var i = 0; i < panels.length; i++) panels[i].classList.remove("active");
+      document.getElementById("panel-" + key).classList.add("active");
+
+      // Fill the panel with the latest data.
+      if (key === "discipline") { renderStreak(); renderOnePct(); renderHabits(); renderGoal(); renderChallenge(); }
+      if (key === "ceo") { renderPriorities(); renderDeadlines(); }
+      if (key === "skills") renderSkills();
+      if (key === "money") renderMoney();
+      if (key === "sales") renderSales();
+      if (key === "badges") renderBadges();
+
+      // Hide the home page and show the feature's own page, scrolled to the top.
+      document.getElementById("landing").style.display = "none";
+      document.getElementById("featurePage").style.display = "block";
+      window.scrollTo(0, 0);
+    }
+
+    // Go back from a feature page to the home page.
+    function goBack() {
+      document.getElementById("featurePage").style.display = "none";
+      document.getElementById("landing").style.display = "block";
+      window.scrollTo(0, 0);
+    }
+
+    // Go to a section on the home page (works even from a feature page).
+    function goToSection(id) {
+      document.getElementById("featurePage").style.display = "none";
+      document.getElementById("landing").style.display = "block";
+      var el = document.getElementById(id);
+      if (el) el.scrollIntoView();
+      if (window.innerWidth < 1000) closeSidebar();
+    }
+
+    // ---------- Sidebar controls ----------
+    // Open or close the sliding sidebar (used on phones).
+    function toggleSidebar() {
+      document.getElementById("sidebar").classList.toggle("open");
+      document.getElementById("sideBackdrop").classList.toggle("open");
+    }
+    function closeSidebar() {
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("sideBackdrop").classList.remove("open");
+    }
+    // Click a feature in the sidebar: open it, and close the sidebar on small screens.
+    function pickFeature(key) {
+      openFeature(key);
+      if (window.innerWidth < 1000) closeSidebar();
+    }
+    // Go to the home page (and leave any feature page).
+    function goHome() {
+      goBack();
+      location.hash = "#home";
+      if (window.innerWidth < 1000) closeSidebar();
+    }
+
+    // ---------- Discipline (streak) ----------
+    function renderStreak() {
+      document.getElementById("streakNum").textContent = data.streak + " days";
+      document.getElementById("bestStreak").textContent = (data.bestStreak || 0);
+    }
+    function markDay() {
+      var msg = document.getElementById("streakMsg");
+      if (data.lastDone === today()) {
+        msg.textContent = "You already marked today. Come back tomorrow!";
+        return;
+      }
+      data.streak = data.streak + 1;
+      data.lastDone = today();
+      if (data.streak > (data.bestStreak || 0)) data.bestStreak = data.streak; // remember the best
+      save();
+      var num = document.getElementById("streakNum");
+      num.textContent = data.streak + " days";
+      num.classList.remove("pulse"); void num.offsetWidth; num.classList.add("pulse"); // replay animation
+      document.getElementById("bestStreak").textContent = data.bestStreak;
+      msg.textContent = "Nice! Streak is now " + data.streak + " day(s).";
+      updateHero();
+    }
+
+    // ---------- Motivational quotes (the "New quote" button) ----------
+    var QUOTES = [
+      ['"Discipline is the bridge between goals and accomplishment."', "— Jim Rohn"],
+      ['"The way to get started is to quit talking and begin doing."', "— Walt Disney"],
+      ['"Success is the sum of small efforts, repeated day in and day out."', "— Robert Collier"],
+      ['"Don’t watch the clock; do what it does. Keep going."', "— Sam Levenson"],
+      ['"The secret of getting ahead is getting started."', "— Mark Twain"],
+      ['"It always seems impossible until it’s done."', "— Nelson Mandela"],
+      ['"A year from now you may wish you had started today."', "— Karen Lamb"],
+      ['"Quality means doing it right when no one is looking."', "— Henry Ford"],
+      ['"Opportunities don’t happen. You create them."', "— Chris Grosser"],
+      ['"Do what you can, with what you have, where you are."', "— Theodore Roosevelt"],
+      ['"Fall seven times, stand up eight."', "— Japanese proverb"],
+      ['"Little by little, a little becomes a lot."', "— Tanzanian proverb"],
+      ['"Hard work beats talent when talent doesn’t work hard."', "— Tim Notke"],
+      ['"The best way to predict the future is to create it."', "— Peter Drucker"]
+    ];
+    function newQuote() {
+      var q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+      document.getElementById("quoteText").textContent = q[0];
+      document.getElementById("quoteAuthor").textContent = q[1];
+    }
+
+    // ---------- Discipline: 1% better log ----------
+    function addOnePct() {
+      var input = document.getElementById("onePctInput");
+      var text = input.value.trim();
+      if (!text) return;
+      data.onePct.unshift(text);            // add to the front
+      if (data.onePct.length > 5) data.onePct.pop(); // keep only the latest 5
+      input.value = "";
+      save();
+      renderOnePct();
+    }
+    function renderOnePct() {
+      var box = document.getElementById("onePctList");
+      box.innerHTML = "";
+      data.onePct.forEach(function (t) {
+        var div = document.createElement("div");
+        div.className = "item done";
+        div.innerHTML = '<span class="item-text">' + escapeHtml(t) + '</span>';
+        box.appendChild(div);
+      });
+    }
+
+    // ---------- Discipline: habits ----------
+    function addHabit() {
+      var input = document.getElementById("habitInput");
+      var text = input.value.trim();
+      if (!text) return;
+      data.habits.push({ text: text, doneDate: "" });
+      input.value = "";
+      save();
+      renderHabits();
+    }
+    function toggleHabit(i) {
+      // Tick it done for today, or untick it.
+      data.habits[i].doneDate = (data.habits[i].doneDate === today()) ? "" : today();
+      save();
+      renderHabits();
+    }
+    function deleteHabit(i) { data.habits.splice(i, 1); save(); renderHabits(); }
+    function renderHabits() {
+      var box = document.getElementById("habitList");
+      box.innerHTML = "";
+      data.habits.forEach(function (h, i) {
+        var doneToday = (h.doneDate === today());
+        var div = document.createElement("div");
+        div.className = "item" + (doneToday ? " done" : "");
+        div.innerHTML = '<span class="item-text">' + escapeHtml(h.text) + '</span>';
+        var btns = document.createElement("span");
+        var tick = document.createElement("button");
+        tick.innerHTML = doneToday ? "Done " + ICONS.check : "Do";
+        tick.onclick = function () { toggleHabit(i); };
+        var del = document.createElement("button");
+        del.innerHTML = ICONS.close; del.setAttribute("aria-label", "Delete habit"); del.style.marginLeft = "6px";
+        del.onclick = function () { deleteHabit(i); };
+        btns.appendChild(tick); btns.appendChild(del);
+        div.appendChild(btns);
+        box.appendChild(div);
+      });
+    }
+
+    // ---------- Discipline: goal ----------
+    function setGoal() {
+      var text = document.getElementById("goalText").value.trim();
+      var target = parseInt(document.getElementById("goalTarget").value, 10);
+      if (!text || !target || target < 1) return;
+      data.goal = { text: text, target: target, current: 0 };
+      save();
+      renderGoal();
+    }
+    function addGoalProgress() {
+      if (!data.goal) return;
+      if (data.goal.current < data.goal.target) data.goal.current++;
+      save();
+      renderGoal();
+    }
+    function renderGoal() {
+      var box = document.getElementById("goalBox");
+      if (!data.goal) { box.innerHTML = ""; return; }
+      var pct = Math.min(data.goal.current / data.goal.target * 100, 100);
+      box.innerHTML =
+        '<p style="margin:10px 0 4px;font-weight:600;">' + escapeHtml(data.goal.text) +
+        ' — ' + data.goal.current + ' / ' + data.goal.target + '</p>' +
+        '<div class="bar"><div class="bar-fill" style="width:' + pct + '%"></div></div>';
+      var btn = document.createElement("button");
+      btn.className = "btn btn-purple"; btn.style.marginTop = "8px";
+      btn.innerHTML = data.goal.current >= data.goal.target
+        ? 'Goal reached <span class="ico">' + ICONS.trophy + '</span>'
+        : "+1 progress";
+      btn.onclick = addGoalProgress;
+      box.appendChild(btn);
+    }
+
+    // ---------- Discipline: daily challenge ----------
+    var CHALLENGES = [
+      "Message one person about your business idea.",
+      "Write down 3 things you're grateful for.",
+      "Save KSh 20 today.",
+      "Watch one short video about business.",
+      "Plan tomorrow's top task tonight.",
+      "Ask someone for honest feedback.",
+      "Tidy your workspace for 5 minutes.",
+      "Write down one new business idea.",
+      "Compliment or thank a customer or friend.",
+      "Read for 10 minutes.",
+      "List 3 things you did well this week.",
+      "Learn one new word about money or business.",
+      "Spend 10 minutes improving your product or skill.",
+      "Set one goal for tomorrow before bed.",
+      "Reach out to someone you admire.",
+      "Drink water and take a 5-minute walk to think.",
+      "Post one thing about what you're building.",
+      "Review your spending for today.",
+      "Practise saying what your business does in one line.",
+      "Help someone with no reward expected.",
+      "Write down what's stopping you — and one fix.",
+      "Do the task you've been avoiding."
+    ];
+    function challengeForToday() {
+      // Pick one challenge based on the day, so it's the same all day.
+      var dayNumber = Math.floor(Date.now() / 86400000);
+      return CHALLENGES[dayNumber % CHALLENGES.length];
+    }
+    function renderChallenge() {
+      document.getElementById("challengeText").textContent = challengeForToday();
+      var msg = document.getElementById("challengeMsg");
+      msg.textContent = (data.challengeDate === today()) ? "Completed today!" : "";
+    }
+    function doChallenge() {
+      data.challengeDate = today();
+      save();
+      document.getElementById("challengeMsg").textContent = "Completed today!";
+    }
+
+    // ---------- CEO: deadlines ----------
+    function addDeadline() {
+      var text = document.getElementById("dlText").value.trim();
+      var date = document.getElementById("dlDate").value;
+      if (!text || !date) return;
+      data.deadlines.push({ text: text, date: date });
+      document.getElementById("dlText").value = "";
+      document.getElementById("dlDate").value = "";
+      save();
+      renderDeadlines();
+    }
+    function deleteDeadline(i) { data.deadlines.splice(i, 1); save(); renderDeadlines(); }
+    function renderDeadlines() {
+      var box = document.getElementById("dlList");
+      box.innerHTML = "";
+      // Sort by date so the soonest is first.
+      data.deadlines.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      data.deadlines.forEach(function (d, i) {
+        var late = d.date < today();
+        var div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = '<span class="item-text">' + escapeHtml(d.text) +
+          ' <small style="color:' + (late ? '#dc2626' : 'var(--grey)') + '">(' + d.date + (late ? ' · late' : '') + ')</small></span>';
+        var del = document.createElement("button");
+        del.innerHTML = ICONS.close;
+        del.setAttribute("aria-label", "Delete deadline");
+        del.onclick = function () { deleteDeadline(i); };
+        div.appendChild(del);
+        box.appendChild(div);
+      });
+    }
+
+    // ---------- Skills: idea generator ----------
+    var IDEAS = [
+      "Design and sell custom phone cases.",
+      "Resell thrifted clothes online.",
+      "Offer Canva graphic design for local shops.",
+      "Start a snack-delivery service at school.",
+      "Make beaded jewellery and sell at events.",
+      "Tutor younger students in a subject you're great at.",
+      "Sell homemade cold juice on hot days.",
+      "Create and sell digital study notes.",
+      "Do phone photography for small businesses.",
+      "Run a weekend car-wash with friends.",
+      "Grow herbs or vegetables and sell to neighbours.",
+      "Manage a social media page for a local shop.",
+      "Fix and resell old electronics.",
+      "Bake and sell cookies for school events."
+    ];
+    function newIdea() {
+      document.getElementById("ideaText").textContent =
+        IDEAS[Math.floor(Math.random() * IDEAS.length)];
+    }
+
+    // ---------- Money: profit calculator ----------
+    function calcProfit() {
+      var cost = parseFloat(document.getElementById("costInput").value) || 0;
+      var price = parseFloat(document.getElementById("priceInput").value) || 0;
+      var profit = price - cost;
+      var out = document.getElementById("profitText");
+      if (price <= 0) { out.textContent = "Enter a selling price first."; return; }
+      var margin = Math.round(profit / price * 100);
+      out.style.color = profit >= 0 ? "#16a34a" : "#dc2626";
+      out.textContent = "Profit: KSh " + profit + "  (margin " + margin + "%)";
+    }
+
+
+    // ---------- CEO Mode (priorities) ----------
+    function addPriority() {
+      var input = document.getElementById("prioInput");
+      var text = input.value.trim();
+      if (!text) return;
+      if (data.priorities.length >= 3) { return; }
+      data.priorities.push({ text: text, done: false });
+      input.value = "";
+      save();
+      renderPriorities();
+    }
+    function togglePriority(i) {
+      data.priorities[i].done = !data.priorities[i].done;
+      save();
+      renderPriorities();
+    }
+    function deletePriority(i) {
+      data.priorities.splice(i, 1);
+      save();
+      renderPriorities();
+    }
+    function renderPriorities() {
+      var list = document.getElementById("prioList");
+      list.innerHTML = "";
+      data.priorities.forEach(function (p, i) {
+        var div = document.createElement("div");
+        div.className = "item" + (p.done ? " done" : "");
+        div.innerHTML = '<span class="item-text">' + escapeHtml(p.text) + '</span>';
+        var btns = document.createElement("span");
+        var tick = document.createElement("button");
+        tick.innerHTML = p.done ? "Done " + ICONS.check : "Do";
+        tick.onclick = function () { togglePriority(i); };
+        var del = document.createElement("button");
+        del.innerHTML = ICONS.close;
+        del.setAttribute("aria-label", "Delete priority");
+        del.style.marginLeft = "6px";
+        del.onclick = function () { deletePriority(i); };
+        btns.appendChild(tick); btns.appendChild(del);
+        div.appendChild(btns);
+        list.appendChild(div);
+      });
+      var doneCount = data.priorities.filter(function (p) { return p.done; }).length;
+      var score = data.priorities.length ? Math.round(doneCount / data.priorities.length * 100) : 0;
+      document.getElementById("ceoScore").textContent = score + "%";
+    }
+
+    // ---------- Business Skills ----------
+    function renderSkills() {
+      // make sure the done-list is as long as the skills list
+      while (data.skillsDone.length < SKILLS.length) data.skillsDone.push(false);
+      // show skills in batches of 6; reveal the next batch once the shown ones are all done
+      var visible = 6;
+      while (visible < SKILLS.length && allSkillsDone(visible)) visible += 6;
+      visible = Math.min(visible, SKILLS.length);
+
+      var list = document.getElementById("skillList");
+      list.innerHTML = "";
+      for (var i = 0; i < visible; i++) {
+        (function (i) {
+          var div = document.createElement("div");
+          div.className = "item" + (data.skillsDone[i] ? " done" : "");
+          div.innerHTML = '<span class="item-text">' + SKILLS[i] + '</span>';
+          var btn = document.createElement("button");
+          btn.innerHTML = data.skillsDone[i] ? "Learned " + ICONS.check : "Mark";
+          btn.onclick = function () { data.skillsDone[i] = !data.skillsDone[i]; save(); renderSkills(); };
+          div.appendChild(btn);
+          list.appendChild(div);
+        })(i);
+      }
+      var doneVisible = 0;
+      for (var j = 0; j < visible; j++) if (data.skillsDone[j]) doneVisible++;
+      document.getElementById("skillBar").style.width = (doneVisible / visible * 100) + "%";
+      document.getElementById("skillMsg").innerHTML = allSkillsDone(SKILLS.length)
+        ? 'All ' + SKILLS.length + ' skills mastered <span class="ico">' + ICONS.trophy + '</span>'
+        : (doneVisible + " of " + visible + " learned — finish them to unlock more.");
+    }
+    // true if the first n skills are all done
+    function allSkillsDone(n) {
+      for (var i = 0; i < n; i++) if (!data.skillsDone[i]) return false;
+      return true;
+    }
+
+    // ---------- Money ----------
+    function addSaving() {
+      var input = document.getElementById("saveInput");
+      var amount = parseInt(input.value, 10);
+      if (!amount || amount < 1) return;
+      data.savingsTotal = data.savingsTotal + amount;
+      input.value = "";
+      save();
+      renderMoney();
+    }
+    function renderMoney() {
+      document.getElementById("saveTotal").textContent = "KSh " + data.savingsTotal;
+      var pct = Math.min(data.savingsTotal / 1000 * 100, 100);
+      document.getElementById("saveBar").style.width = pct + "%";
+      var msg = document.getElementById("saveMsg");
+      msg.innerHTML = data.savingsTotal >= 1000
+        ? 'Goal reached <span class="ico">' + ICONS.trophy + '</span>'
+        : "Keep going!";
+    }
+
+    // ---------- Sales Tracker ----------
+    function recordSale() {
+      var item = document.getElementById("saleItem").value.trim();
+      var amount = parseFloat(document.getElementById("saleAmount").value) || 0;
+      if (!item || amount <= 0) return;
+      data.sales.unshift({ item: item, amount: amount });  // newest first
+      if (data.sales.length > 8) data.sales.pop();          // keep the latest 8
+      document.getElementById("saleItem").value = "";
+      document.getElementById("saleAmount").value = "";
+      save();
+      renderSales();
+    }
+    function deleteSale(i) { data.sales.splice(i, 1); save(); renderSales(); }
+    function renderSales() {
+      var total = 0;
+      data.sales.forEach(function (s) { total += s.amount; });
+      document.getElementById("saleTotal").textContent = "KSh " + total;
+      document.getElementById("saleCount").textContent = data.sales.length;
+      var box = document.getElementById("saleList");
+      box.innerHTML = "";
+      data.sales.forEach(function (s, i) {
+        var div = document.createElement("div");
+        div.className = "item done";
+        div.innerHTML = '<span class="item-text">' + escapeHtml(s.item) + ' — KSh ' + s.amount + '</span>';
+        var del = document.createElement("button");
+        del.innerHTML = ICONS.close;
+        del.setAttribute("aria-label", "Delete sale");
+        del.onclick = function () { deleteSale(i); };
+        div.appendChild(del);
+        box.appendChild(div);
+      });
+    }
+
+    // ---------- Badges ----------
+    function renderBadges() {
+      var grid = document.getElementById("badgeGrid");
+      grid.innerHTML = "";
+      var count = 0;
+      BADGES.forEach(function (b) {
+        var unlocked = b.check();
+        if (unlocked) count++;
+        var box = document.createElement("div");
+        box.className = "badge-box" + (unlocked ? " unlocked" : "");
+        box.innerHTML = '<div class="badge-icon">' + (ICONS[b.icon] || "") + '</div><div class="badge-name">' + b.name + '</div>';
+        grid.appendChild(box);
+      });
+      document.getElementById("badgeCount").textContent = count + " of " + BADGES.length + " unlocked";
+    }
+
+    // ---------- Small helpers ----------
+    // Make typed text safe to show (stops broken HTML).
+    function escapeHtml(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    // Update the streak number shown in the hero card.
+    function updateHero() {
+      document.getElementById("heroStreak").textContent = data.streak + " days";
+    }
+
+    // ---------- Scroll reveal animation ----------
+    // Watch the elements with class "reveal" and add "show" when they scroll into view.
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { entry.target.classList.add("show"); }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+    // ---------- Light / dark mode ----------
+    function toggleTheme() {
+      var dark = document.body.classList.toggle("dark");
+      document.getElementById("themeBtn").innerHTML = ICONS[dark ? "sun" : "moon"];
+      try { localStorage.setItem("eh-theme", dark ? "dark" : "light"); } catch (e) {}
+    }
+    // Apply the saved theme when the page loads.
+    (function () {
+      var t = "light";
+      try { t = localStorage.getItem("eh-theme") || "light"; } catch (e) {}
+      if (t === "dark") document.body.classList.add("dark");
+      document.getElementById("themeBtn").innerHTML = ICONS[t === "dark" ? "sun" : "moon"];
+    })();
+
+    // Draw all the inline SVG icons, then show the saved streak.
+    paintIcons();
+    updateHero();
+  </script>
+
+</body>
+</html>
